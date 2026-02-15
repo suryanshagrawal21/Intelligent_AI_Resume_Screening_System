@@ -1,5 +1,4 @@
-import textstat
-import re
+from src.rjas_metric import calculate_rjas
 
 def calculate_readability(text):
     """
@@ -46,40 +45,44 @@ def extract_experience_relevance(text):
     # Cap experience at 10 years for scoring 1.0
     return min(max_years / 5.0, 1.0) # Assume 5 years is "full score" baseline for general mid-level
 
-def calculate_ats_score(resume_text, jd_text, skill_match_count, total_jd_skills, nlp_similarity):
+def calculate_composite_score(resume_text, jd_text, skill_match_count, total_jd_skills, nlp_similarity, sbert_similarity, weights, bias_penalty=0, alpha=0.9):
     """
-    Calculates ATS Score based on weighted formula:
-    - Skill matching (40%)
-    - Keyword relevance (30%) - Mapped to NLP Cosine Similarity
-    - Experience relevance (20%)
-    - Education match (10%)
+    Calculates the Final Composite Score using Multi-Objective RJAS.
     
     Returns:
     - total_score (0-100)
     - breakdown (dict)
     """
     
-    # 1. Skill Match (40%)
+    # 1. Skill Match Ratio (0-1)
     skill_ratio = skill_match_count / total_jd_skills if total_jd_skills > 0 else 0
-    score_skills = skill_ratio * 40
     
-    # 2. Keyword Relevance (30%)
-    # Using existing NLP similarity as proxy for "Relevance"
-    score_keywords = nlp_similarity * 30
+    # 2. Experience (0-1)
+    exp_score = extract_experience_relevance(resume_text)
     
-    # 3. Experience Relevance (20%)
-    exp_factor = extract_experience_relevance(resume_text)
-    score_experience = exp_factor * 20
+    # 3. Education (0-1)
+    edu_score = extract_education_level(resume_text)
     
-    # 4. Education Match (10%)
-    edu_factor = extract_education_level(resume_text)
-    score_education = edu_factor * 10
+    # 4. Semantic (0-1) - already averaged/passed in
+    sem_score = sbert_similarity
     
-    total_score = score_skills + score_keywords + score_experience + score_education
+    # Calculate RJAS
+    final_score, accuracy_score, fairness_score = calculate_rjas(
+        sbert_score=sem_score,
+        skill_score=skill_ratio,
+        experience_score=exp_score,
+        education_score=edu_score,
+        bias_penalty=bias_penalty,
+        weights=weights,
+        alpha=alpha
+    )
     
-    return round(total_score, 2), {
-        "Skills": round(score_skills, 2),
-        "Keywords": round(score_keywords, 2),
-        "Experience": round(score_experience, 2),
-        "Education": round(score_education, 2)
+    return final_score, {
+        "Skills": round(skill_ratio * 100, 2),
+        "Semantic": round(sem_score * 100, 2),
+        "Experience": round(exp_score * 100, 2),
+        "Education": round(edu_score * 100, 2),
+        "RJAS": final_score,
+        "Accuracy": accuracy_score,
+        "Fairness": fairness_score
     }
