@@ -6,7 +6,7 @@ from src.parser import extract_text
 from src.preprocessing import clean_text, extract_skills, preprocess_text, COMMON_SKILLS
 from src.matcher import calculate_similarity, calculate_sbert_similarity, find_missing_skills
 from src.research_lab import compare_algorithms, detect_bias_entities
-from src.scoring import calculate_readability
+from src.scoring import calculate_readability, calculate_composite_score
 from src.adaptive_engine import RLRankingAgent
 from src.experiment import ExperimentLab
 
@@ -112,7 +112,7 @@ if st.button("Run Adaptive Experiment"):
                 else:
                     sbert_scores = [0] * len(valid_indices)
                 
-                from src.scoring import calculate_composite_score
+                # from src.scoring import calculate_composite_score (Moved to top)
                 
                 for idx, (t_score, s_score) in zip(valid_indices, zip(tfidf_scores, sbert_scores)):
                     res = results[idx]
@@ -193,6 +193,26 @@ if st.button("Run Adaptive Experiment"):
                         st.plotly_chart(fig_p, use_container_width=True)
                 
                 st.divider()
+                st.subheader("📊 Statistical Validation")
+                from src.research_lab import calculate_statistics
+                
+                stats_res = calculate_statistics(df)
+                if stats_res:
+                    s1, s2, s3, s4 = st.columns(4)
+                    s1.metric("RJAS Mean (μ)", f"{stats_res.get('RJAS Mean', 0):.2f}", f"σ={stats_res.get('RJAS Std', 0):.2f}")
+                    s2.metric("NLP Mean (μ)", f"{stats_res.get('NLP Mean', 0):.2f}", f"σ={stats_res.get('NLP Std', 0):.2f}")
+                    
+                    t_val = stats_res.get('T-Statistic')
+                    p_val = stats_res.get('P-Value')
+                    
+                    if t_val is not None:
+                         s3.metric("Paired T-Statistic", f"{t_val:.4f}")
+                         sig_icon = "✅" if stats_res.get("Significant") else "❌"
+                         s4.metric("P-Value (Sig < 0.05)", f"{p_val:.4e} {sig_icon}")
+                    else:
+                        st.error(f"Stat Error: {stats_res.get('Error')}")
+
+                st.divider()
                 st.subheader("⚖️ Bias-Aware Fairness Constraints")
                 from src.research_lab import analyze_fairness
                 fairness_metrics = analyze_fairness(df)
@@ -253,3 +273,18 @@ if st.button("Run Adaptive Experiment"):
                      new_weights = st.session_state['adaptive_engine'].update_policy(cand_data, reward=1.0)
                      st.balloons()
                      st.success(f"RL Agent Updated! New Weights for '{role}': {new_weights}")
+                     
+                st.divider()
+                st.subheader("🔬 RL Convergence Simulator (Research Mode)")
+                if st.button("Run Simulation (100 Iterations)"):
+                    with st.spinner("Simulating user feedback loop..."):
+                        from src.research_lab import simulate_rl_convergence
+                        sim_data = simulate_rl_convergence(iterations=100, role=role)
+                        
+                        st.success("Simulation Complete!")
+                        
+                        # Plot Stacked Area Chart of Weights
+                        weight_cols = [c for c in sim_data.columns if c not in ["Iteration", "Cumulative Reward"]]
+                        
+                        st.line_chart(sim_data, x="Iteration", y=weight_cols)
+                        st.caption("Weight Evolution: Observation of how the agent adapts to the 'Ideal' candidate profile over time.")

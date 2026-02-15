@@ -1,3 +1,9 @@
+import re
+try:
+    import textstat
+except ImportError:
+    textstat = None
+
 from src.rjas_metric import calculate_rjas
 
 def calculate_readability(text):
@@ -5,6 +11,9 @@ def calculate_readability(text):
     Calculates a 'Clarity Score' using Flesch Reading Ease.
     Higher is easier to read (0-100).
     """
+    if not textstat:
+        return 0.5 # Fallback if library missing
+        
     try:
         score = textstat.flesch_reading_ease(text)
         # Normalize to 0-1 range roughly

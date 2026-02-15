@@ -83,8 +83,15 @@ class RLRankingAgent:
         if not scores:
             return current_weights
 
+        # Filter scores to only include valid components (Skills, Semantic, Experience, Education)
+        # This prevents picking "RJAS" or "Accuracy" as the best component
+        valid_keys = [k for k in scores.keys() if k in current_weights]
+        
+        if not valid_keys:
+             return current_weights # Should not happen if breakdown is correct
+             
         # Find the dominant factor in the successful candidate
-        best_component = max(scores, key=scores.get)
+        best_component = max(valid_keys, key=scores.get)
         
         # RL Update Rule: Q(s,a) = Q(s,a) + alpha * (Reward - Q(s,a))
         # Here we simplify: Shift weight towards the component that yielded the reward.

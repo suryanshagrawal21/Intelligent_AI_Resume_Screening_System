@@ -117,3 +117,96 @@ def generate_pareto_frontier(results_data, weights):
             })
             
     return pd.DataFrame(pareto_points)
+
+def calculate_statistics(results_df):
+    """
+    Computes rigorous statistical metrics for the research paper.
+    - T-Test (Paired) between RJAS and TF-IDF
+    - Descriptive Stats (Mean, Std)
+    """
+    import numpy as np
+    from scipy import stats
+    
+    if results_df.empty or "RJAS" not in results_df.columns or "NLP Score" not in results_df.columns:
+        return {}
+        
+    rjas_scores = results_df["RJAS"].values
+    # NLP Score is 0-1, scale to 0-100 for valid comparison
+    nlp_scores = results_df["NLP Score"].values * 100 
+    
+    # 1. Descriptive
+    stats_data = {
+        "RJAS Mean": np.mean(rjas_scores),
+        "RJAS Std": np.std(rjas_scores),
+        "NLP Mean": np.mean(nlp_scores),
+        "NLP Std": np.std(nlp_scores)
+    }
+    
+    # 2. T-Test (Paired)
+    # Null Hypothesis: The mean difference between RJAS and NLP Score is zero.
+    try:
+        t_stat, p_val = stats.ttest_rel(rjas_scores, nlp_scores)
+        stats_data["T-Statistic"] = t_stat
+        stats_data["P-Value"] = p_val
+        stats_data["Significant"] = p_val < 0.05
+    except Exception as e:
+        stats_data["Error"] = str(e)
+        
+    return stats_data
+
+def simulate_rl_convergence(iterations=100, role="Developer"):
+    """
+    Simulates the RL Agent's learning process over time to generate a convergence plot.
+    Returns DataFrame with [Iteration, Reward, Weight_Skill, Weight_Semantic, ...].
+    """
+    import random
+    from src.adaptive_engine import RLRankingAgent
+    
+    agent = RLRankingAgent()
+    agent.current_role = role
+    
+    history = []
+    
+    # "Ideal" candidate profile for this simulation (Ground Truth)
+    # Let's say a Developer role favors Skills (0.6) and Experience (0.3)
+    # We simulate feedback where candidates high in these get hired (Reward=1)
+    
+    for i in range(iterations):
+        # 1. Get current weights (Action)
+        weights = agent.get_weights(explore=True)
+        
+        # 2. Simulate User Feedback
+        # We generate a random candidate score profile
+        # If the candidate aligns with "Ground Truth", user hires (Reward=1)
+        # Otherwise, user rejects (Reward=-1 or 0) - Simplified: we only update on Hires for now
+        
+        # specific context: Developer
+        # Candidate strengths
+        cand_skills = random.uniform(0.5, 1.0)
+        cand_exp = random.uniform(0.0, 1.0)
+        cand_sem = random.uniform(0.4, 0.9)
+        cand_edu = random.uniform(0.2, 0.8)
+        
+        # Oracle Score (Hidden user preference)
+        oracle_score = (0.6 * cand_skills) + (0.3 * cand_exp) + (0.05 * cand_sem) + (0.05 * cand_edu)
+        
+        reward = 0
+        if oracle_score > 0.75: # User Hires
+            reward = 1.0
+            # Construct feedback payload
+            feedback = {
+                "Breakdown": {
+                    "Skills": cand_skills * 100,
+                    "Experience": cand_exp * 100,
+                    "Semantic": cand_sem * 100,
+                    "Education": cand_edu * 100
+                }
+            }
+            agent.update_policy(feedback, reward)
+        
+        # Log state
+        log_entry = {"Iteration": i+1, "Cumulative Reward": agent.iterations} # approximation
+        log_entry.update(agent.q_table[role])
+        history.append(log_entry)
+        
+    return pd.DataFrame(history)
