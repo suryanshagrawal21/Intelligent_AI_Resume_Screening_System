@@ -14,7 +14,7 @@ A sophisticated resume screening system powered by SBERT (Sentence-BERT) and Rei
 
 1.  Clone the repository:
     ```bash
-    git clone https://github.com/suryanshagrawal21/NLP-Resume-Screening-System.git
+    git clone https://github.com/suryanshagrawal21/Intelligent_AI_Resume_Screening_System.git
     cd Intelligent_AI_Resume_Screening_System
     ```
 

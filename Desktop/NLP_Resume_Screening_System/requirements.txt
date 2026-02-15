@@ -1,9 +1,0 @@
-streamlit
-spacy
-scikit-learn
-pdfminer.six
-python-docx
-pandas
-plotly
-nltk
-PyPDF2
