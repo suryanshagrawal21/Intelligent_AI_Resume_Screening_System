@@ -7,3 +7,7 @@ pandas
 plotly
 nltk
 PyPDF2
+sentence-transformers
+textstat
+scipy
+numpy
