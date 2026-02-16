@@ -1,3 +1,4 @@
+
 # Intelligent AI Resume Screening System
 
 A **Research-Grade** Multi-Objective Resume Screening Framework powered by **SBERT (Sentence-BERT)**, **Reinforcement Learning (RL)**, and **Bias-Aware Fairness Constraints**.
@@ -67,6 +68,22 @@ To reproduce the RL convergence results reported in our research:
   - `adaptive_engine.py`: RL Contextual Bandit implementation.
   - `research_lab.py`: Statistical tests and Pareto analysis.
 - `verify_research.py`: automated validation script.
+
+## ✅ Verification
+
+To verify the core logic and research components without launching the full UI:
+
+1.  **Test RJAS & RL Agent**:
+    ```bash
+    python verify_framework.py
+    ```
+    *Expected Output: `✅ Multi-Objective RJAS Test Passed`, `✅ RL Agent Test Passed`*
+
+2.  **Test Statistical Analysis**:
+    ```bash
+    python verify_research.py
+    ```
+    *Expected Output: `✅ Statistics Module Verified`, `✅ RL Convergence Verified`*
 
 ## 🤝 Contributing
 Contributions are welcome! Please submit a Pull Request.
